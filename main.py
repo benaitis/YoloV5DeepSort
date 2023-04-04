@@ -1,7 +1,7 @@
 from elements.yolo import YOLO
 from elements.deep_sort import DEEPSORT
-# from elements.perspective_transform import Perspective_Transform
-# from elements.assets import transform_matrix, detect_color
+from elements.perspective_transform import Perspective_Transform
+from elements.assets import transform_matrix, detect_color
 from arguments import Arguments
 from yolov5.utils.plots import plot_one_box
 
@@ -17,7 +17,7 @@ def main(opt):
     # Load models
     detector = YOLO(opt.yolov5_model, opt.conf_thresh, opt.iou_thresh)
     deep_sort = DEEPSORT(opt.deepsort_config)
-    # perspective_transform = Perspective_Transform()
+    perspective_transform = Perspective_Transform()
 
     # Video capture
     cap = cv2.VideoCapture(opt.source)
@@ -62,8 +62,8 @@ def main(opt):
             yoloOutput = detector.detect(frame)
 
             # Output: Homography Matrix and Warped image 
-            # if frame_num % 5 ==0: # Calculate the homography matrix every 5 frames
-            #     M, warped_image = perspective_transform.homography_matrix(main_frame)
+            if frame_num % 5 ==0: # Calculate the homography matrix every 5 frames
+                M, warped_image = perspective_transform.homography_matrix(main_frame)
 
             if yoloOutput:
 
@@ -73,19 +73,19 @@ def main(opt):
                 # The homography matrix is applied to the center of the lower side of the bbox.
                 for i, obj in enumerate(yoloOutput):
                     xyxy = [obj['bbox'][0][0], obj['bbox'][0][1], obj['bbox'][1][0], obj['bbox'][1][1]]
-                    # x_center = (xyxy[0] + xyxy[2])/2 
-                    # y_center = xyxy[3]
+                    x_center = (xyxy[0] + xyxy[2])/2 
+                    y_center = xyxy[3]
                     
-                    # if obj['label'] == 'player':
-                    #     # coords = transform_matrix(M, (x_center, y_center), (h, w), (gt_h, gt_w))
-                    #     try:
-                    #         # color = detect_color(main_frame[xyxy[1]:xyxy[3], xyxy[0]:xyxy[2]])
-                    #         # cv2.circle(bg_img, coords, bg_ratio + 1, color, -1)
-                    #     except:
-                    #       pass
-                    if obj['label'] == 'ball':
-                        # coords = transform_matrix(M, (x_center, y_center), (h, w), (gt_h, gt_w))
-                        # cv2.circle(bg_img, coords, bg_ratio + 1, (102, 0, 102), -1)
+                    if obj['label'] == 'player':
+                        coords = transform_matrix(M, (x_center, y_center), (h, w), (gt_h, gt_w))
+                        try:
+                            color = detect_color(main_frame[xyxy[1]:xyxy[3], xyxy[0]:xyxy[2]])
+                            cv2.circle(bg_img, coords, bg_ratio + 1, color, -1)
+                        except:
+                          pass
+                    elif obj['label'] == 'ball':
+                        coords = transform_matrix(M, (x_center, y_center), (h, w), (gt_h, gt_w))
+                        cv2.circle(bg_img, coords, bg_ratio + 1, (102, 0, 102), -1)
                         plot_one_box(xyxy, frame, (102, 0, 102), label="ball")
             else:
                 deep_sort.deepsort.increment_ages()
